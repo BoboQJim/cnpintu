@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+  <title>中国景点拼图 - 益智休闲游戏</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Screen: Splash / Login -->
+  <div id="screen-splash" class="screen active">
+    <div class="splash-bg"></div>
+    <div class="splash-content">
+      <div class="splash-logo">
+        <div class="logo-puzzle-pieces">
+          <div class="logo-piece p1"></div>
+          <div class="logo-piece p2"></div>
+          <div class="logo-piece p3"></div>
+          <div class="logo-piece p4"></div>
+        </div>
+      </div>
+      <h1 class="splash-title">中国景点拼图</h1>
+      <p class="splash-subtitle">探索祖国大好河山</p>
+      <div class="splash-login-form">
+        <input type="text" id="player-name" placeholder="请输入您的昵称" maxlength="12" autocomplete="off">
+        <button id="btn-start" class="btn btn-primary btn-glow">开始游戏</button>
+      </div>
+      <p class="splash-tip">输入昵称即可保存游戏进度</p>
+    </div>
+  </div>
+
+  <!-- Screen: Province Selection -->
+  <div id="screen-provinces" class="screen">
+    <div class="screen-header">
+      <div class="header-left">
+        <div class="coin-display"><span class="coin-icon">🪙</span><span id="coins-provinces">0</span></div>
+      </div>
+      <h2 class="header-title">选择省份</h2>
+      <div class="header-right">
+        <button class="btn-icon" id="btn-shop-from-provinces" title="商店">🛒</button>
+      </div>
+    </div>
+    <div class="province-grid" id="province-grid"></div>
+    <div class="player-bar">
+      <span id="player-display-name"></span>
+      <span class="progress-text">已完成: <span id="total-progress">0</span>/99</span>
+    </div>
+  </div>
+
+  <!-- Screen: Spot Selection -->
+  <div id="screen-spots" class="screen">
+    <div class="screen-header">
+      <div class="header-left">
+        <button class="btn-icon btn-back" id="btn-back-provinces">←</button>
+      </div>
+      <h2 class="header-title" id="spot-province-name"></h2>
+      <div class="header-right">
+        <div class="coin-display"><span class="coin-icon">🪙</span><span id="coins-spots">0</span></div>
+      </div>
+    </div>
+    <div class="spots-container" id="spots-container"></div>
+  </div>
+
+  <!-- Screen: Difficulty Selection -->
+  <div id="screen-difficulty" class="screen">
+    <div class="screen-header">
+      <div class="header-left">
+        <button class="btn-icon btn-back" id="btn-back-spots">←</button>
+      </div>
+      <h2 class="header-title">选择难度</h2>
+      <div class="header-right"></div>
+    </div>
+    <div class="difficulty-preview">
+      <img id="difficulty-preview-img" src="" alt="预览">
+      <div class="difficulty-spot-name" id="difficulty-spot-name"></div>
+    </div>
+    <div class="difficulty-cards" id="difficulty-cards"></div>
+  </div>
+
+  <!-- Screen: Puzzle Game -->
+  <div id="screen-game" class="screen">
+    <div class="game-header">
+      <div class="game-header-left">
+        <button class="btn-icon btn-back" id="btn-back-difficulty">←</button>
+      </div>
+      <div class="game-header-center">
+        <span class="game-timer" id="game-timer">00:00</span>
+        <span class="game-pieces-count"><span id="placed-count">0</span>/<span id="total-count">0</span></span>
+      </div>
+      <div class="game-header-right">
+        <button class="btn-icon btn-preview-toggle" id="btn-ref-toggle" title="参考图">🖼️</button>
+      </div>
+    </div>
+    <div class="game-area-wrapper">
+      <div class="puzzle-board-container">
+        <canvas id="puzzle-canvas"></canvas>
+        <div class="reference-overlay" id="reference-overlay">
+          <img id="reference-img" src="" alt="参考图">
+        </div>
+      </div>
+    </div>
+    <div class="game-tools">
+      <button class="tool-btn" id="tool-hint" title="提示">
+        <span class="tool-icon">💡</span><span class="tool-label">提示</span><span class="tool-cost">5🪙</span>
+      </button>
+      <button class="tool-btn" id="tool-autoplace" title="自动放置">
+        <span class="tool-icon">🎯</span><span class="tool-label">放置</span><span class="tool-cost">15🪙</span>
+      </button>
+      <button class="tool-btn" id="tool-preview" title="预览">
+        <span class="tool-icon">👁️</span><span class="tool-label">预览</span><span class="tool-cost">3🪙</span>
+      </button>
+    </div>
+    <div class="piece-tray-wrapper">
+      <div class="piece-tray" id="piece-tray"></div>
+    </div>
+  </div>
+
+  <!-- Screen: Completion -->
+  <div id="screen-complete" class="screen">
+    <div class="complete-content">
+      <div class="complete-image-wrapper">
+        <img id="complete-image" src="" alt="完成">
+      </div>
+      <div class="complete-info">
+        <h2 class="complete-title">🎉 拼图完成!</h2>
+        <div class="complete-spot-name" id="complete-spot-name"></div>
+        <div class="complete-stats">
+          <div class="stat-item"><span class="stat-label">用时</span><span class="stat-value" id="complete-time">00:00</span></div>
+          <div class="stat-item"><span class="stat-label">难度</span><span class="stat-value" id="complete-difficulty"></span></div>
+          <div class="stat-item"><span class="stat-label">获得金币</span><span class="stat-value coin-reward" id="complete-coins">+10</span></div>
+        </div>
+        <div class="complete-actions">
+          <button class="btn btn-primary" id="btn-next-puzzle">下一关</button>
+          <button class="btn btn-secondary" id="btn-replay">再玩一次</button>
+          <button class="btn btn-ghost" id="btn-back-home">返回首页</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen: Shop -->
+  <div id="screen-shop" class="screen">
+    <div class="screen-header">
+      <div class="header-left">
+        <button class="btn-icon btn-back" id="btn-back-from-shop">←</button>
+      </div>
+      <h2 class="header-title">商店</h2>
+      <div class="header-right">
+        <div class="coin-display"><span class="coin-icon">🪙</span><span id="coins-shop">0</span></div>
+      </div>
+    </div>
+    <div class="shop-content">
+      <div class="shop-section">
+        <h3 class="shop-section-title">道具购买</h3>
+        <div class="shop-items" id="shop-items"></div>
+      </div>
+      <div class="shop-section">
+        <h3 class="shop-section-title">获取金币</h3>
+        <div class="shop-coin-options">
+          <div class="shop-coin-card" id="btn-watch-ad">
+            <div class="coin-card-icon">📺</div>
+            <div class="coin-card-info">
+              <div class="coin-card-title">观看广告</div>
+              <div class="coin-card-desc">观看一段广告获得奖励</div>
+            </div>
+            <div class="coin-card-reward">+5 🪙</div>
+          </div>
+          <div class="shop-coin-card" id="btn-daily-bonus">
+            <div class="coin-card-icon">🎁</div>
+            <div class="coin-card-info">
+              <div class="coin-card-title">每日奖励</div>
+              <div class="coin-card-desc">每天领取一次免费金币</div>
+            </div>
+            <div class="coin-card-reward">+20 🪙</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Ad modal overlay -->
+  <div id="ad-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="ad-placeholder">
+        <div class="ad-icon">📺</div>
+        <p>广告播放中...</p>
+        <div class="ad-progress-bar"><div class="ad-progress-fill" id="ad-progress"></div></div>
+        <p class="ad-timer" id="ad-timer-text">3秒后可关闭</p>
+      </div>
+      <button class="btn btn-primary ad-close-btn" id="ad-close-btn" disabled>领取奖励</button>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
