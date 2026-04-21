@@ -182,9 +182,10 @@ html, body {
 .spot-card:hover { border-color: var(--primary); transform: translateY(-2px); }
 .spot-card.locked { cursor: not-allowed; }
 .spot-card.locked:hover { border-color: var(--border); transform: none; }
+/* CHANGED: spot-card-image uses contain + dark bg to show full image */
 .spot-card-image {
-  width: 100%; aspect-ratio: 16/9; object-fit: cover;
-  display: block;
+  width: 100%; aspect-ratio: 16/9; object-fit: contain;
+  display: block; background: #0d1220;
 }
 .spot-card.locked .spot-card-image { filter: grayscale(1) brightness(0.3); }
 .spot-card-overlay {
@@ -210,10 +211,11 @@ html, body {
 .difficulty-preview {
   padding: 20px 16px 10px; text-align: center; flex-shrink: 0;
 }
+/* CHANGED: difficulty preview uses contain + dark bg */
 .difficulty-preview img {
   width: 100%; max-width: 360px; max-height: 30vh;
-  border-radius: var(--radius-lg); object-fit: cover;
-  border: 2px solid var(--border);
+  border-radius: var(--radius-lg); object-fit: contain;
+  border: 2px solid var(--border); background: #0d1220;
 }
 .difficulty-spot-name {
   margin-top: 10px; font-size: 16px; font-weight: 600; color: var(--text-secondary);
@@ -245,6 +247,20 @@ html, body {
 .game-header-center { display: flex; align-items: center; gap: 16px; font-size: 14px; font-weight: 600; }
 .game-timer { font-variant-numeric: tabular-nums; color: var(--primary-light); }
 
+/* Reference toggle button - more prominent with text */
+.btn-ref-toggle-btn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 6px 12px; border: 2px solid var(--primary);
+  border-radius: var(--radius-sm); background: var(--bg-card);
+  color: var(--primary-light); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; font-family: inherit;
+}
+.btn-ref-toggle-btn:hover { background: var(--bg-card-hover); }
+.btn-ref-toggle-btn.active {
+  background: var(--primary); color: #000;
+}
+
+/* PLACEHOLDER: game-area-wrapper, puzzle-board, reference-panel */
 .game-area-wrapper {
   flex: 1; display: flex; align-items: center; justify-content: center;
   padding: 8px; overflow: hidden; position: relative;
@@ -259,19 +275,84 @@ html, body {
   background: rgba(20,30,50,0.6);
   border: 2px solid var(--border);
 }
-.reference-overlay {
-  position: absolute; top: 8px; right: 8px;
-  width: 120px; border-radius: var(--radius-sm);
-  overflow: hidden; border: 2px solid var(--primary);
-  opacity: 0.85; z-index: 10; cursor: pointer;
-  transition: all 0.3s; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+
+/* === Reference Panel (PC: side panel, outside puzzle) === */
+.reference-panel {
+  display: none; /* hidden by default, toggled via JS */
+  flex-direction: column;
+  width: 200px; min-width: 160px; max-width: 260px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden; margin-right: 12px;
+  flex-shrink: 0; align-self: stretch;
+  max-height: 100%;
 }
-.reference-overlay:hover { opacity: 1; transform: scale(1.05); }
-.reference-overlay.expanded {
-  width: 260px; opacity: 1;
+.reference-panel.visible { display: flex; }
+.reference-panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px; font-weight: 600; color: var(--text-secondary);
 }
-.reference-overlay.hidden { display: none; }
-.reference-overlay img { width: 100%; display: block; }
+.reference-panel-close {
+  background: none; border: none; color: var(--text-secondary);
+  font-size: 16px; cursor: pointer; padding: 2px 6px;
+  border-radius: 4px; transition: all 0.2s;
+}
+.reference-panel-close:hover { color: var(--text-primary); background: var(--bg-card-hover); }
+.reference-panel-body {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 8px; overflow: hidden; background: #0d1220;
+}
+.reference-panel-body img {
+  width: 100%; height: auto; max-height: 100%;
+  object-fit: contain; display: block; border-radius: 4px;
+}
+
+/* === Mobile Reference Strip (bottom collapsible) === */
+.reference-mobile-strip {
+  display: none; /* shown only on mobile via media query */
+  flex-direction: column;
+  position: absolute; bottom: 0; left: 0; right: 0;
+  z-index: 50; background: var(--bg-surface);
+  border-top: 2px solid var(--primary);
+  transform: translateY(calc(100% - 36px));
+  transition: transform 0.3s ease;
+}
+.reference-mobile-strip.expanded {
+  transform: translateY(0);
+}
+.reference-mobile-handle {
+  display: flex; align-items: center; justify-content: center;
+  padding: 8px; cursor: pointer; font-size: 13px; font-weight: 600;
+  color: var(--primary-light); background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  height: 36px;
+}
+.reference-mobile-strip.expanded .reference-mobile-handle span::before {
+  content: "▼ ";
+}
+.reference-mobile-strip.expanded .reference-mobile-handle span {
+  font-size: 0;
+}
+.reference-mobile-strip.expanded .reference-mobile-handle span::before {
+  font-size: 13px;
+}
+.reference-mobile-strip.expanded .reference-mobile-handle span::after {
+  content: "收起参考图";
+  font-size: 13px;
+}
+.reference-mobile-content {
+  height: 140px; display: flex; align-items: center; justify-content: center;
+  padding: 8px; background: #0d1220;
+}
+.reference-mobile-content img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 4px;
+}
+
+/* PLACEHOLDER: game-tools, piece-tray, drag, effects, completion, leaderboard, share, shop, responsive */
 
 .game-tools {
   display: flex; gap: 8px; justify-content: center;
@@ -352,12 +433,17 @@ html, body {
   overflow: hidden; border: 3px solid var(--success);
   box-shadow: 0 0 30px rgba(16,185,129,0.3);
   animation: completeReveal 0.6s ease;
+  background: #0d1220;
 }
 @keyframes completeReveal {
   from { transform: scale(0.8); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
-.complete-image-wrapper img { width: 100%; display: block; }
+/* CHANGED: completion image uses contain */
+.complete-image-wrapper img {
+  width: 100%; display: block; object-fit: contain;
+  background: #0d1220;
+}
 .complete-info { text-align: center; margin-top: 24px; }
 .complete-title { font-size: 28px; margin-bottom: 8px; }
 .complete-spot-name { font-size: 16px; color: var(--text-secondary); margin-bottom: 16px; }
@@ -370,6 +456,93 @@ html, body {
 .coin-reward { color: var(--primary); }
 .complete-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 280px; }
 .complete-actions .btn { width: 100%; }
+
+/* === Leaderboard Screen === */
+.leaderboard-tabs {
+  display: flex; gap: 0; flex-shrink: 0;
+  background: var(--bg-surface); border-bottom: 1px solid var(--border);
+}
+.leaderboard-tab {
+  flex: 1; padding: 12px 16px; border: none; background: transparent;
+  color: var(--text-secondary); font-size: 15px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: all 0.2s;
+  border-bottom: 3px solid transparent;
+}
+.leaderboard-tab.active {
+  color: var(--primary-light); border-bottom-color: var(--primary);
+  background: var(--bg-card);
+}
+.leaderboard-tab:hover { color: var(--text-primary); }
+.leaderboard-list {
+  flex: 1; overflow-y: auto; padding: 16px;
+  -webkit-overflow-scrolling: touch;
+}
+.leaderboard-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px; background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 10px;
+  transition: all 0.2s;
+}
+.leaderboard-rank {
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 900; border-radius: 50%;
+  background: var(--bg-surface); color: var(--text-secondary);
+  border: 2px solid var(--border); flex-shrink: 0;
+}
+.leaderboard-rank.top1 { background: linear-gradient(135deg, #ffd700, #ffb300); color: #000; border-color: #ffd700; }
+.leaderboard-rank.top2 { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); color: #000; border-color: #c0c0c0; }
+.leaderboard-rank.top3 { background: linear-gradient(135deg, #cd7f32, #a0522d); color: #fff; border-color: #cd7f32; }
+.leaderboard-info { flex: 1; }
+.leaderboard-name { font-size: 15px; font-weight: 600; }
+.leaderboard-detail { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.leaderboard-value {
+  font-size: 16px; font-weight: 700; color: var(--primary-light);
+  text-align: right; min-width: 60px;
+}
+.leaderboard-item.self {
+  border-color: var(--primary); background: var(--bg-card-hover);
+}
+
+/* === Share Modal === */
+.share-modal-card {
+  max-width: 380px; padding: 24px;
+}
+.share-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.share-modal-header h3 { font-size: 18px; font-weight: 700; }
+.share-modal-close {
+  background: none; border: none; color: var(--text-secondary);
+  font-size: 20px; cursor: pointer; padding: 4px 8px;
+  border-radius: 4px; transition: all 0.2s;
+}
+.share-modal-close:hover { color: var(--text-primary); background: var(--bg-card-hover); }
+.share-text-box {
+  background: var(--bg-dark); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px;
+  font-size: 14px; line-height: 1.6; color: var(--text-primary);
+  margin-bottom: 20px; text-align: left;
+  white-space: pre-wrap; word-break: break-all;
+  max-height: 160px; overflow-y: auto;
+}
+.share-buttons {
+  display: flex; flex-direction: column; gap: 10px;
+}
+.share-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 20px; border-radius: var(--radius);
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: all 0.2s; font-family: inherit; border: none;
+  width: 100%;
+}
+.share-btn-icon { font-size: 20px; }
+.share-btn-wechat { background: #07c160; color: #fff; }
+.share-btn-wechat:hover { background: #06ad56; }
+.share-btn-copy { background: var(--accent); color: #fff; }
+.share-btn-copy:hover { background: var(--accent-dark); }
+.share-btn-native { background: var(--bg-card-hover); color: var(--text-primary); border: 1px solid var(--border); }
+.share-btn-native:hover { border-color: var(--primary); }
 
 /* === Shop Screen === */
 .shop-content { flex: 1; overflow-y: auto; padding: 16px; }
@@ -445,28 +618,7 @@ html, body {
 .ad-close-btn { margin-top: 16px; width: 100%; }
 .ad-close-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* === Responsive === */
-@media (min-width: 768px) {
-  .province-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; padding: 24px; }
-  .spots-container { max-width: 640px; margin: 0 auto; }
-  .difficulty-cards { max-width: 480px; margin: 0 auto; }
-  .piece-tray-wrapper { height: 130px; }
-  .reference-overlay { width: 150px; }
-  .reference-overlay.expanded { width: 300px; }
-}
-@media (min-width: 1024px) {
-  .province-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); padding: 32px; gap: 14px; }
-  .piece-tray-wrapper { height: 140px; }
-}
-@media (max-width: 375px) {
-  .splash-title { font-size: 28px; }
-  .province-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px; }
-  .piece-tray-wrapper { height: 100px; }
-  .tool-btn { padding: 4px 10px; min-width: 60px; }
-  .game-tools { gap: 6px; padding: 4px 8px; }
-}
-
-/* Preview overlay for tool */
+/* === Preview overlay for tool === */
 .preview-fullscreen {
   position: fixed; inset: 0; z-index: 2000;
   background: rgba(0,0,0,0.85);
@@ -504,4 +656,61 @@ html, body {
 @keyframes confettiFall {
   0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
   100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+/* === Responsive: Mobile (default) === */
+/* On mobile: hide PC side panel, show mobile strip */
+.reference-panel { display: none !important; }
+.reference-mobile-strip { display: flex; }
+
+/* === Responsive: Tablet+ === */
+@media (min-width: 768px) {
+  .province-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; padding: 24px; }
+  .spots-container { max-width: 640px; margin: 0 auto; }
+  .difficulty-cards { max-width: 480px; margin: 0 auto; }
+  .piece-tray-wrapper { height: 130px; }
+
+  /* On tablet+: show PC panel, hide mobile strip */
+  .reference-panel { display: none !important; }
+  .reference-panel.visible { display: flex !important; }
+  .reference-mobile-strip { display: none !important; }
+
+  .game-area-wrapper { padding: 12px; }
+}
+
+/* === Responsive: PC === */
+@media (min-width: 1024px) {
+  .province-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); padding: 32px; gap: 14px; }
+  .piece-tray-wrapper { height: 140px; }
+
+  .reference-panel { display: none !important; }
+  .reference-panel.visible { display: flex !important; width: 220px; }
+  .reference-mobile-strip { display: none !important; }
+
+  .game-area-wrapper {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 767px) {
+  /* Mobile: game-area needs room for mobile strip */
+  #screen-game .game-area-wrapper {
+    padding-bottom: 40px; /* space for collapsed mobile strip handle */
+  }
+  .reference-mobile-strip {
+    display: flex;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 100;
+  }
+  .reference-mobile-strip.hidden { display: none; }
+}
+
+@media (max-width: 375px) {
+  .splash-title { font-size: 28px; }
+  .province-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px; }
+  .piece-tray-wrapper { height: 100px; }
+  .tool-btn { padding: 4px 10px; min-width: 60px; }
+  .game-tools { gap: 6px; padding: 4px 8px; }
+  .reference-mobile-content { height: 110px; }
 }

@@ -3,12 +3,12 @@ const GameState = {
   playerName: '',
   coins: 50,
   completedPuzzles: {}, // { "北京-故宫-easy": true, ... }
-  unlockedSpots: {},    // { "北京": [0], "天津": [0], ... } index of unlocked spots
+  unlockedSpots: {},    // { "北京": [0], "天津": [0], ... }
   props: { hint: 0, autoPlace: 0, preview: 0 },
   currentProvince: null,
   currentSpotIndex: null,
   currentDifficulty: null,
-  dailyBonusClaimed: null, // date string
+  dailyBonusClaimed: null,
 };
 
 // === Save / Load ===
@@ -32,7 +32,6 @@ function loadState(name) {
     } catch(e) {}
   }
   GameState.playerName = name;
-  // Ensure all provinces have at least spot 0 unlocked
   PROVINCES_DATA.forEach(p => {
     if (!GameState.unlockedSpots[p.province]) {
       GameState.unlockedSpots[p.province] = [0];
@@ -86,7 +85,6 @@ function showProvinces() {
   PROVINCES_DATA.forEach((prov, idx) => {
     const card = document.createElement('div');
     card.className = 'province-card';
-    // Count completions for this province
     let count = 0;
     prov.spots.forEach((spot, si) => {
       const keys = Object.keys(DIFFICULTY);
@@ -176,7 +174,7 @@ function showDifficulty(prov, spotIdx) {
 }
 
 // === Puzzle Engine ===
-let puzzleState = null; // runtime puzzle data
+let puzzleState = null;
 
 function startPuzzle(prov, spotIdx, diffKey) {
   const spot = prov.spots[spotIdx];
@@ -187,11 +185,20 @@ function startPuzzle(prov, spotIdx, diffKey) {
   document.getElementById('total-count').textContent = cfg.total;
   document.getElementById('placed-count').textContent = '0';
 
-  // Reference image
+  // Reference image - set both PC and mobile
   const refImg = document.getElementById('reference-img');
   refImg.src = imgPath;
-  const refOverlay = document.getElementById('reference-overlay');
-  refOverlay.classList.remove('hidden', 'expanded');
+  const refImgMobile = document.getElementById('reference-img-mobile');
+  refImgMobile.src = imgPath;
+
+  // Reset reference panel state
+  const refPanel = document.getElementById('reference-panel');
+  refPanel.classList.remove('visible');
+  const refMobileStrip = document.getElementById('reference-mobile-strip');
+  refMobileStrip.classList.remove('expanded', 'hidden');
+  // Reset toggle button
+  const toggleBtn = document.getElementById('btn-ref-toggle');
+  toggleBtn.classList.remove('active');
 
   // Load image and initialize puzzle
   const img = new Image();
@@ -205,10 +212,12 @@ function initPuzzle(img, cfg, prov, spotIdx, diffKey) {
   const canvas = document.getElementById('puzzle-canvas');
   const ctx = canvas.getContext('2d');
   const wrapper = document.querySelector('.game-area-wrapper');
-  const wrapperW = wrapper.clientWidth - 16;
+  // Account for reference panel width if visible
+  const refPanel = document.getElementById('reference-panel');
+  const refPanelW = refPanel.classList.contains('visible') ? refPanel.offsetWidth + 12 : 0;
+  const wrapperW = wrapper.clientWidth - 16 - refPanelW;
   const wrapperH = wrapper.clientHeight - 16;
 
-  // Calculate canvas size to fit
   const imgAspect = img.width / img.height;
   let canvasW, canvasH;
   if (wrapperW / wrapperH > imgAspect) {
@@ -228,14 +237,12 @@ function initPuzzle(img, cfg, prov, spotIdx, diffKey) {
   const cellW = canvasW / cfg.cols;
   const cellH = canvasH / cfg.rows;
 
-  // Generate piece indices and shuffle
   const pieces = [];
   for (let r = 0; r < cfg.rows; r++) {
     for (let c = 0; c < cfg.cols; c++) {
       pieces.push({ row: r, col: c, placed: false });
     }
   }
-  // Shuffle for tray
   const shuffled = [...pieces];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -253,13 +260,9 @@ function initPuzzle(img, cfg, prov, spotIdx, diffKey) {
     spot: prov.spots[spotIdx],
   };
 
-  // Draw grid
   drawBoard();
-  // Build tray
   buildTray();
-  // Start timer
   startTimer();
-  // Setup drag
   setupDrag();
 }
 
@@ -269,11 +272,9 @@ function drawBoard() {
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvasW, canvasH);
 
-  // Draw background (subtle pattern)
   ctx.fillStyle = 'rgba(15,22,40,0.8)';
   ctx.fillRect(0, 0, canvasW, canvasH);
 
-  // Draw placed pieces
   for (let r = 0; r < cfg.rows; r++) {
     for (let c = 0; c < cfg.cols; c++) {
       const x = c * cellW;
@@ -289,7 +290,6 @@ function drawBoard() {
     }
   }
 
-  // Draw grid lines
   ctx.strokeStyle = 'rgba(100,130,180,0.3)';
   ctx.lineWidth = 1;
   for (let r = 0; r <= cfg.rows; r++) {
@@ -305,7 +305,6 @@ function drawBoard() {
     ctx.stroke();
   }
 
-  // Draw subtle position hints for empty cells (only for easy/medium)
   if (cfg.total <= 48) {
     ctx.fillStyle = 'rgba(100,130,180,0.12)';
     ctx.font = `${Math.min(cellW, cellH) * 0.25}px sans-serif`;
@@ -328,7 +327,6 @@ function buildTray() {
   tray.innerHTML = '';
   const { img, cfg, cellW, cellH, trayPieces } = puzzleState;
 
-  // Calculate tray piece size
   const trayH = tray.parentElement.clientHeight - 16;
   const pieceDisplayH = Math.min(trayH, 90);
   const pieceDisplayW = pieceDisplayH * (cellW / cellH);
@@ -379,12 +377,10 @@ function stopTimer() {
 // === Drag & Drop System (Touch + Mouse) ===
 let dragData = null;
 let ghostEl = null;
-
 let _dragCleanup = null;
-function setupDrag() {
-  // Clean up previous listeners
-  if (_dragCleanup) { _dragCleanup(); _dragCleanup = null; }
 
+function setupDrag() {
+  if (_dragCleanup) { _dragCleanup(); _dragCleanup = null; }
   const tray = document.getElementById('piece-tray');
 
   const touchStartHandler = (e) => onDragStart(e);
@@ -433,18 +429,14 @@ function onDragStart(e) {
   const col = parseInt(target.dataset.col);
   const trayIdx = parseInt(target.dataset.trayIndex);
 
-  // Start drag after small movement or long press
   const initDrag = () => {
     if (dragData) return;
     isDragging = true;
     target.classList.add('dragging');
 
-    // Create ghost
     ghostEl = document.createElement('canvas');
     ghostEl.className = 'drag-ghost';
     const { cellW, cellH } = puzzleState;
-    // Ghost same size as board cell
-    const scale = 1;
     ghostEl.width = Math.ceil(cellW);
     ghostEl.height = Math.ceil(cellH);
     ghostEl.style.width = cellW + 'px';
@@ -463,12 +455,10 @@ function onDragStart(e) {
     dragData = { row, col, trayIdx, el: target };
   };
 
-  // For touch: use small delay, for mouse: immediate on move
   if (e.type === 'touchstart') {
     longPressTimer = setTimeout(initDrag, 150);
   }
 
-  // Store initDrag for mousemove
   dragData = null;
   target._initDrag = initDrag;
   target._row = row;
@@ -483,18 +473,12 @@ function onDragStart(e) {
 
 function onDragMove(e) {
   if (!dragData && !dragStartPos) return;
-
   const pos = getPos(e);
 
-  // Check if moved enough to start drag (touch)
   if (!isDragging && dragStartPos) {
     const dist = Math.hypot(pos.x - dragStartPos.x, pos.y - dragStartPos.y);
     if (dist > 10 && longPressTimer) {
       clearTimeout(longPressTimer);
-      // Find the target
-      const tray = document.getElementById('piece-tray');
-      const pieces = tray.querySelectorAll('.tray-piece');
-      // Can't easily recover, just cancel
     }
   }
 
@@ -504,8 +488,6 @@ function onDragMove(e) {
   const { cellW, cellH } = puzzleState;
   ghostEl.style.left = (pos.x - cellW / 2) + 'px';
   ghostEl.style.top = (pos.y - cellH / 2) + 'px';
-
-  // Highlight target cell
   highlightDropTarget(pos);
 }
 
@@ -514,7 +496,6 @@ function highlightDropTarget(pos) {
   const rect = canvas.getBoundingClientRect();
   const { cfg, cellW, cellH } = puzzleState;
 
-  // Remove old highlights
   document.querySelectorAll('.drop-highlight').forEach(el => el.remove());
 
   const relX = pos.x - rect.left;
@@ -569,7 +550,6 @@ function onDragEnd(e) {
   let placed = false;
   if (row >= 0 && row < cfg.rows && col >= 0 && col < cfg.cols) {
     if (row === dragData.row && col === dragData.col && !board[row][col]) {
-      // Correct placement!
       board[row][col] = { row: dragData.row, col: dragData.col };
       puzzleState.trayPieces[dragData.trayIdx].placed = true;
       puzzleState.placedCount++;
@@ -578,23 +558,17 @@ function onDragEnd(e) {
       drawBoard();
       buildTray();
       setupDrag();
-
-      // Snap flash effect
       showSnapFlash(rect, col, row);
 
-      // Check completion
       if (puzzleState.placedCount === cfg.total) {
         showConfetti();
         setTimeout(() => onPuzzleComplete(), 600);
       }
     } else if (board[row][col]) {
       showToast('该位置已有拼图块');
-    } else {
-      // Wrong position - no toast, just return piece to tray
     }
   }
 
-  // Cleanup
   dragData.el.classList.remove('dragging');
   ghostEl.remove();
   ghostEl = null;
@@ -605,7 +579,7 @@ function onDragEnd(e) {
 
 // === Visual Effects ===
 function showSnapFlash(canvasRect, col, row) {
-  const { cellW, cellH, cfg } = puzzleState;
+  const { cellW, cellH } = puzzleState;
   const scaleX = canvasRect.width / puzzleState.canvasW;
   const scaleY = canvasRect.height / puzzleState.canvasH;
   const flash = document.createElement('div');
@@ -636,24 +610,24 @@ function showConfetti() {
 }
 
 // === Puzzle Complete ===
+// PLACEHOLDER: completionData stored for share
+let lastCompletionData = null;
+
 function onPuzzleComplete() {
   stopTimer();
   const { prov, spotIdx, diffKey, spot, startTime } = puzzleState;
   const elapsed = Math.floor((Date.now() - startTime) / 1000);
   const cfg = DIFFICULTY[diffKey];
 
-  // Mark as completed
   const key = `${prov.province}-${spot}-${diffKey}`;
   const alreadyCompleted = GameState.completedPuzzles[key];
   GameState.completedPuzzles[key] = true;
 
-  // Unlock next spot
   const unlocked = GameState.unlockedSpots[prov.province];
   if (spotIdx + 1 < prov.spots.length && !unlocked.includes(spotIdx + 1)) {
     unlocked.push(spotIdx + 1);
   }
 
-  // Award coins (only first completion)
   let coinsEarned = 0;
   if (!alreadyCompleted) {
     coinsEarned = cfg.coins;
@@ -661,7 +635,6 @@ function onPuzzleComplete() {
   }
   saveState();
 
-  // Show completion screen
   const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
   const s = String(elapsed % 60).padStart(2, '0');
   document.getElementById('complete-image').src = getImagePath(prov.province, spot);
@@ -669,23 +642,356 @@ function onPuzzleComplete() {
   document.getElementById('complete-time').textContent = `${m}:${s}`;
   document.getElementById('complete-difficulty').textContent = cfg.label;
   document.getElementById('complete-coins').textContent = alreadyCompleted ? '已领取' : `+${coinsEarned}`;
+
+  // Store for share
+  lastCompletionData = {
+    province: prov.province,
+    spot: spot,
+    difficulty: cfg.label,
+    time: `${m}:${s}`,
+    coins: coinsEarned,
+  };
+
   showScreen('screen-complete');
   updateCoinsDisplay();
 }
+
+// === Share Functionality ===
+function generateShareText() {
+  if (!lastCompletionData) return '';
+  const d = lastCompletionData;
+  return `我在「拼览山河」中完成了${d.province}·${d.spot}的${d.difficulty}拼图！用时${d.time}，获得${d.coins}金币。一起来拼览祖国大好河山吧！`;
+}
+
+// WeChat JS-SDK placeholder configuration
+const WeChatShareConfig = {
+  appId: '',        // Reserved: WeChat AppID
+  timestamp: '',    // Reserved: signature timestamp
+  nonceStr: '',     // Reserved: signature nonce
+  signature: '',    // Reserved: signature
+  jsApiList: ['updateAppMessageShareData', 'updateTimelineShareData'],
+};
+
+function initWeChatShare() {
+  // Placeholder: call wx.config when parameters are provided by backend
+  if (typeof wx !== 'undefined' && WeChatShareConfig.appId) {
+    wx.config({
+      debug: false,
+      appId: WeChatShareConfig.appId,
+      timestamp: WeChatShareConfig.timestamp,
+      nonceStr: WeChatShareConfig.nonceStr,
+      signature: WeChatShareConfig.signature,
+      jsApiList: WeChatShareConfig.jsApiList,
+    });
+    wx.ready(function() {
+      console.log('WeChat JS-SDK ready');
+    });
+    wx.error(function(res) {
+      console.warn('WeChat JS-SDK error:', res);
+    });
+  }
+}
+
+function shareToWeChat() {
+  const text = generateShareText();
+  const shareUrl = window.location.href;
+  if (typeof wx !== 'undefined' && WeChatShareConfig.appId) {
+    wx.updateAppMessageShareData({
+      title: '拼览山河 - ' + (lastCompletionData ? lastCompletionData.spot : '益智拼图'),
+      desc: text,
+      link: shareUrl,
+      imgUrl: window.location.origin + '/images/share-icon.png',
+      success: function() { showToast('分享设置成功'); },
+    });
+    showToast('请点击右上角分享到微信');
+  } else {
+    showToast('微信分享功能暂未开放，请复制链接分享');
+  }
+}
+
+function copyShareLink() {
+  const text = generateShareText() + '\n' + window.location.href;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('已复制到剪贴板');
+    }).catch(() => {
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    showToast('已复制到剪贴板');
+  } catch(e) {
+    showToast('复制失败，请手动复制');
+  }
+  document.body.removeChild(ta);
+}
+
+function nativeShare() {
+  const text = generateShareText();
+  if (navigator.share) {
+    navigator.share({
+      title: '拼览山河',
+      text: text,
+      url: window.location.href,
+    }).catch(() => {});
+  } else {
+    showToast('当前浏览器不支持分享功能，请复制链接');
+  }
+}
+
+function openShareModal() {
+  const textBox = document.getElementById('share-text-box');
+  textBox.textContent = generateShareText();
+  document.getElementById('share-modal').classList.add('show');
+}
+
+function closeShareModal() {
+  document.getElementById('share-modal').classList.remove('show');
+}
+
+// Share button listeners
+document.getElementById('btn-share').addEventListener('click', openShareModal);
+document.getElementById('share-modal-close').addEventListener('click', closeShareModal);
+document.getElementById('share-modal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeShareModal();
+});
+document.getElementById('btn-share-wechat').addEventListener('click', () => {
+  shareToWeChat();
+});
+document.getElementById('btn-share-copy').addEventListener('click', () => {
+  copyShareLink();
+});
+document.getElementById('btn-share-native').addEventListener('click', () => {
+  nativeShare();
+});
+
+// === Leaderboard ===
+const MOCK_LEADERBOARD_SPOTS = [
+  { name: '山河探险家', spots: 87, time: '12:34:56' },
+  { name: '拼图大师', spots: 72, time: '15:20:11' },
+  { name: '旅行达人', spots: 65, time: '18:45:30' },
+  { name: '风景猎人', spots: 58, time: '22:10:05' },
+  { name: '文化行者', spots: 51, time: '25:33:42' },
+  { name: '古迹寻踪', spots: 44, time: '28:15:20' },
+  { name: '山水之间', spots: 39, time: '31:05:18' },
+  { name: '地图控', spots: 33, time: '35:40:55' },
+  { name: '拼图新手', spots: 25, time: '40:22:10' },
+  { name: '初来乍到', spots: 12, time: '50:15:33' },
+];
+
+const MOCK_LEADERBOARD_TIME = [
+  { name: '闪电手', spots: 45, time: '08:12:30' },
+  { name: '速度之王', spots: 52, time: '10:45:22' },
+  { name: '拼图大师', spots: 72, time: '15:20:11' },
+  { name: '快手玩家', spots: 38, time: '16:33:05' },
+  { name: '山河探险家', spots: 87, time: '12:34:56' },
+  { name: '效率达人', spots: 30, time: '18:50:40' },
+  { name: '稳扎稳打', spots: 28, time: '22:15:18' },
+  { name: '风景猎人', spots: 58, time: '22:10:05' },
+  { name: '慢慢来', spots: 20, time: '35:10:22' },
+  { name: '享受过程', spots: 15, time: '42:30:15' },
+];
+
+let currentLeaderboardTab = 'spots';
+
+function showLeaderboard() {
+  renderLeaderboard(currentLeaderboardTab);
+  showScreen('screen-leaderboard');
+}
+
+function renderLeaderboard(tab) {
+  currentLeaderboardTab = tab;
+  const list = document.getElementById('leaderboard-list');
+  list.innerHTML = '';
+
+  // Update tab UI
+  document.querySelectorAll('.leaderboard-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === tab);
+  });
+
+  const data = tab === 'spots' ? MOCK_LEADERBOARD_SPOTS : MOCK_LEADERBOARD_TIME;
+
+  // Calculate player stats for "self" row
+  let playerSpots = 0;
+  Object.keys(GameState.completedPuzzles).forEach(k => {
+    if (GameState.completedPuzzles[k]) playerSpots++;
+  });
+
+  data.forEach((entry, idx) => {
+    const item = document.createElement('div');
+    item.className = 'leaderboard-item';
+    const rankClass = idx === 0 ? 'top1' : idx === 1 ? 'top2' : idx === 2 ? 'top3' : '';
+    const rankDisplay = idx < 3 ? ['🥇','🥈','🥉'][idx] : (idx + 1);
+
+    if (tab === 'spots') {
+      item.innerHTML = `
+        <div class="leaderboard-rank ${rankClass}">${rankDisplay}</div>
+        <div class="leaderboard-info">
+          <div class="leaderboard-name">${entry.name}</div>
+          <div class="leaderboard-detail">累计用时 ${entry.time}</div>
+        </div>
+        <div class="leaderboard-value">${entry.spots} 景点</div>
+      `;
+    } else {
+      item.innerHTML = `
+        <div class="leaderboard-rank ${rankClass}">${rankDisplay}</div>
+        <div class="leaderboard-info">
+          <div class="leaderboard-name">${entry.name}</div>
+          <div class="leaderboard-detail">完成 ${entry.spots} 景点</div>
+        </div>
+        <div class="leaderboard-value">${entry.time}</div>
+      `;
+    }
+    list.appendChild(item);
+  });
+
+  // Add player's own entry at bottom
+  const selfItem = document.createElement('div');
+  selfItem.className = 'leaderboard-item self';
+  const selfName = GameState.playerName || '我';
+  if (tab === 'spots') {
+    selfItem.innerHTML = `
+      <div class="leaderboard-rank">—</div>
+      <div class="leaderboard-info">
+        <div class="leaderboard-name">${selfName} (我)</div>
+        <div class="leaderboard-detail">继续加油！</div>
+      </div>
+      <div class="leaderboard-value">${playerSpots} 景点</div>
+    `;
+  } else {
+    selfItem.innerHTML = `
+      <div class="leaderboard-rank">—</div>
+      <div class="leaderboard-info">
+        <div class="leaderboard-name">${selfName} (我)</div>
+        <div class="leaderboard-detail">完成 ${playerSpots} 景点</div>
+      </div>
+      <div class="leaderboard-value">--:--:--</div>
+    `;
+  }
+  list.appendChild(selfItem);
+}
+
+// Leaderboard button and tab listeners
+document.getElementById('btn-leaderboard').addEventListener('click', showLeaderboard);
+document.getElementById('btn-back-from-leaderboard').addEventListener('click', () => {
+  showProvinces();
+  showScreen('screen-provinces');
+});
+document.querySelectorAll('.leaderboard-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    renderLeaderboard(tab.dataset.tab);
+  });
+});
+
+// === Reference Image Toggle (new: side panel on PC, bottom strip on mobile) ===
+document.getElementById('btn-ref-toggle').addEventListener('click', () => {
+  const isMobile = window.innerWidth < 768;
+  const toggleBtn = document.getElementById('btn-ref-toggle');
+
+  if (isMobile) {
+    // Toggle mobile strip
+    const strip = document.getElementById('reference-mobile-strip');
+    if (strip.classList.contains('hidden')) {
+      strip.classList.remove('hidden');
+      strip.classList.add('expanded');
+      toggleBtn.classList.add('active');
+    } else if (strip.classList.contains('expanded')) {
+      strip.classList.remove('expanded');
+      toggleBtn.classList.remove('active');
+    } else {
+      strip.classList.add('expanded');
+      toggleBtn.classList.add('active');
+    }
+  } else {
+    // Toggle PC side panel
+    const panel = document.getElementById('reference-panel');
+    if (panel.classList.contains('visible')) {
+      panel.classList.remove('visible');
+      toggleBtn.classList.remove('active');
+    } else {
+      panel.classList.add('visible');
+      toggleBtn.classList.add('active');
+    }
+    // Re-layout puzzle after panel toggle
+    if (puzzleState) {
+      setTimeout(() => {
+        const { img, cfg, prov, spotIdx, diffKey } = puzzleState;
+        const savedBoard = puzzleState.board;
+        const savedTray = puzzleState.trayPieces;
+        const savedPlaced = puzzleState.placedCount;
+        const savedStart = puzzleState.startTime;
+        initPuzzle(img, cfg, prov, spotIdx, diffKey);
+        puzzleState.board = savedBoard;
+        puzzleState.trayPieces = savedTray;
+        puzzleState.placedCount = savedPlaced;
+        puzzleState.startTime = savedStart;
+        drawBoard();
+        buildTray();
+        setupDrag();
+      }, 50);
+    }
+  }
+});
+
+// Mobile strip toggle
+document.getElementById('ref-mobile-toggle').addEventListener('click', () => {
+  const strip = document.getElementById('reference-mobile-strip');
+  const toggleBtn = document.getElementById('btn-ref-toggle');
+  if (strip.classList.contains('expanded')) {
+    strip.classList.remove('expanded');
+    toggleBtn.classList.remove('active');
+  } else {
+    strip.classList.add('expanded');
+    toggleBtn.classList.add('active');
+  }
+});
+
+// PC panel close button
+document.getElementById('ref-panel-close').addEventListener('click', () => {
+  document.getElementById('reference-panel').classList.remove('visible');
+  document.getElementById('btn-ref-toggle').classList.remove('active');
+  // Re-layout
+  if (puzzleState) {
+    setTimeout(() => {
+      const { img, cfg, prov, spotIdx, diffKey } = puzzleState;
+      const savedBoard = puzzleState.board;
+      const savedTray = puzzleState.trayPieces;
+      const savedPlaced = puzzleState.placedCount;
+      const savedStart = puzzleState.startTime;
+      initPuzzle(img, cfg, prov, spotIdx, diffKey);
+      puzzleState.board = savedBoard;
+      puzzleState.trayPieces = savedTray;
+      puzzleState.placedCount = savedPlaced;
+      puzzleState.startTime = savedStart;
+      drawBoard();
+      buildTray();
+      setupDrag();
+    }, 50);
+  }
+});
 
 // === Props/Tools ===
 document.getElementById('tool-hint').addEventListener('click', () => {
   if (!puzzleState) return;
   if (GameState.coins < PROPS.hint.cost) return showToast('金币不足');
-  // Find first unplaced piece
   const unplaced = puzzleState.trayPieces.find(p => !p.placed);
   if (!unplaced) return;
   GameState.coins -= PROPS.hint.cost;
   updateCoinsDisplay();
   saveState();
 
-  // Highlight the correct cell on the board
-  const { cellW, cellH, cfg } = puzzleState;
+  const { cellW, cellH } = puzzleState;
   const canvas = document.getElementById('puzzle-canvas');
   const rect = canvas.getBoundingClientRect();
   const scaleX = rect.width / canvas.width;
@@ -699,7 +1005,6 @@ document.getElementById('tool-hint').addEventListener('click', () => {
   hl.style.height = (cellH * scaleY) + 'px';
   document.body.appendChild(hl);
 
-  // Also highlight the tray piece
   const tray = document.getElementById('piece-tray');
   const idx = puzzleState.trayPieces.indexOf(unplaced);
   const trayPieces = tray.querySelectorAll('.tray-piece');
@@ -727,7 +1032,6 @@ document.getElementById('tool-autoplace').addEventListener('click', () => {
   updateCoinsDisplay();
   saveState();
 
-  // Place it
   const idx = puzzleState.trayPieces.indexOf(unplaced);
   unplaced.placed = true;
   puzzleState.board[unplaced.row][unplaced.col] = { row: unplaced.row, col: unplaced.col };
@@ -760,27 +1064,6 @@ document.getElementById('tool-preview').addEventListener('click', () => {
   showToast('预览3秒');
   setTimeout(() => overlay.remove(), 3000);
   overlay.addEventListener('click', () => overlay.remove());
-});
-
-// === Reference Image Toggle ===
-document.getElementById('btn-ref-toggle').addEventListener('click', () => {
-  const ref = document.getElementById('reference-overlay');
-  if (ref.classList.contains('hidden')) {
-    ref.classList.remove('hidden');
-  } else if (ref.classList.contains('expanded')) {
-    ref.classList.remove('expanded');
-    ref.classList.add('hidden');
-  } else {
-    ref.classList.add('expanded');
-  }
-});
-document.getElementById('reference-overlay').addEventListener('click', () => {
-  const ref = document.getElementById('reference-overlay');
-  if (ref.classList.contains('expanded')) {
-    ref.classList.remove('expanded');
-  } else {
-    ref.classList.add('expanded');
-  }
 });
 
 // === Navigation Buttons ===
@@ -848,7 +1131,6 @@ function showShop() {
     `;
     container.appendChild(item);
   });
-  // Buy handlers
   container.querySelectorAll('.shop-buy-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const propKey = btn.dataset.prop;
@@ -924,7 +1206,6 @@ document.getElementById('btn-daily-bonus').addEventListener('click', () => {
 // === Window Resize ===
 window.addEventListener('resize', () => {
   if (puzzleState && document.getElementById('screen-game').classList.contains('active')) {
-    // Redraw at new size
     const { img, cfg, prov, spotIdx, diffKey } = puzzleState;
     const savedBoard = puzzleState.board;
     const savedTray = puzzleState.trayPieces;
@@ -932,7 +1213,6 @@ window.addEventListener('resize', () => {
     const savedStart = puzzleState.startTime;
 
     initPuzzle(img, cfg, prov, spotIdx, diffKey);
-    // Restore state
     puzzleState.board = savedBoard;
     puzzleState.trayPieces = savedTray;
     puzzleState.placedCount = savedPlaced;
@@ -942,3 +1222,6 @@ window.addEventListener('resize', () => {
     setupDrag();
   }
 });
+
+// Initialize WeChat SDK on load (placeholder - will activate when config is provided)
+initWeChatShare();

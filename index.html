@@ -39,6 +39,7 @@
       </div>
       <h2 class="header-title">选择省份</h2>
       <div class="header-right">
+        <button class="btn-icon" id="btn-leaderboard" title="排行榜">🏆</button>
         <button class="btn-icon" id="btn-shop-from-provinces" title="商店">🛒</button>
       </div>
     </div>
@@ -90,15 +91,21 @@
         <span class="game-pieces-count"><span id="placed-count">0</span>/<span id="total-count">0</span></span>
       </div>
       <div class="game-header-right">
-        <button class="btn-icon btn-preview-toggle" id="btn-ref-toggle" title="参考图">🖼️</button>
+        <button class="btn-ref-toggle-btn" id="btn-ref-toggle" title="参考图">🖼️ 参考图</button>
       </div>
     </div>
     <div class="game-area-wrapper">
-      <div class="puzzle-board-container">
-        <canvas id="puzzle-canvas"></canvas>
-        <div class="reference-overlay" id="reference-overlay">
+      <div class="reference-panel" id="reference-panel">
+        <div class="reference-panel-header">
+          <span>参考图</span>
+          <button class="reference-panel-close" id="ref-panel-close">✕</button>
+        </div>
+        <div class="reference-panel-body">
           <img id="reference-img" src="" alt="参考图">
         </div>
+      </div>
+      <div class="puzzle-board-container">
+        <canvas id="puzzle-canvas"></canvas>
       </div>
     </div>
     <div class="game-tools">
@@ -114,6 +121,15 @@
     </div>
     <div class="piece-tray-wrapper">
       <div class="piece-tray" id="piece-tray"></div>
+    </div>
+    <!-- Mobile collapsible reference strip -->
+    <div class="reference-mobile-strip" id="reference-mobile-strip">
+      <div class="reference-mobile-handle" id="ref-mobile-toggle">
+        <span>▲ 参考图</span>
+      </div>
+      <div class="reference-mobile-content">
+        <img id="reference-img-mobile" src="" alt="参考图">
+      </div>
     </div>
   </div>
 
@@ -132,12 +148,29 @@
           <div class="stat-item"><span class="stat-label">获得金币</span><span class="stat-value coin-reward" id="complete-coins">+10</span></div>
         </div>
         <div class="complete-actions">
+          <button class="btn btn-primary" id="btn-share">分享成绩</button>
           <button class="btn btn-primary" id="btn-next-puzzle">下一关</button>
           <button class="btn btn-secondary" id="btn-replay">再玩一次</button>
           <button class="btn btn-ghost" id="btn-back-home">返回首页</button>
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- Screen: Leaderboard -->
+  <div id="screen-leaderboard" class="screen">
+    <div class="screen-header">
+      <div class="header-left">
+        <button class="btn-icon btn-back" id="btn-back-from-leaderboard">←</button>
+      </div>
+      <h2 class="header-title">🏆 排行榜</h2>
+      <div class="header-right"></div>
+    </div>
+    <div class="leaderboard-tabs">
+      <button class="leaderboard-tab active" data-tab="spots">解锁景点</button>
+      <button class="leaderboard-tab" data-tab="time">最快完成</button>
+    </div>
+    <div class="leaderboard-list" id="leaderboard-list"></div>
   </div>
 
   <!-- Screen: Shop -->
@@ -193,6 +226,31 @@
         <p class="ad-timer" id="ad-timer-text">3秒后可关闭</p>
       </div>
       <button class="btn btn-primary ad-close-btn" id="ad-close-btn" disabled>领取奖励</button>
+    </div>
+  </div>
+
+  <!-- Share modal overlay -->
+  <div id="share-modal" class="modal-overlay">
+    <div class="modal-card share-modal-card">
+      <div class="share-modal-header">
+        <h3>分享成绩</h3>
+        <button class="share-modal-close" id="share-modal-close">✕</button>
+      </div>
+      <div class="share-text-box" id="share-text-box"></div>
+      <div class="share-buttons">
+        <button class="btn share-btn share-btn-wechat" id="btn-share-wechat">
+          <span class="share-btn-icon">💬</span>
+          <span>微信分享</span>
+        </button>
+        <button class="btn share-btn share-btn-copy" id="btn-share-copy">
+          <span class="share-btn-icon">📋</span>
+          <span>复制链接</span>
+        </button>
+        <button class="btn share-btn share-btn-native" id="btn-share-native">
+          <span class="share-btn-icon">📤</span>
+          <span>更多分享</span>
+        </button>
+      </div>
     </div>
   </div>
 
