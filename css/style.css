@@ -310,46 +310,24 @@ html, body {
   object-fit: contain; display: block; border-radius: 4px;
 }
 
-/* === Mobile Reference Strip (bottom collapsible) === */
-.reference-mobile-strip {
-  display: none; /* shown only on mobile via media query */
-  flex-direction: column;
-  position: absolute; bottom: 0; left: 0; right: 0;
-  z-index: 50; background: var(--bg-surface);
-  border-top: 2px solid var(--primary);
-  transform: translateY(calc(100% - 36px));
-  transition: transform 0.3s ease;
+/* === Floating Reference Thumbnail (mobile) === */
+.reference-float-thumb {
+  display: none;
+  position: absolute;
+  top: 8px; right: 8px;
+  z-index: 60;
+  width: 120px;
+  background: var(--bg-surface);
+  border: 2px solid var(--primary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  animation: fadeIn 0.2s ease;
 }
-.reference-mobile-strip.expanded {
-  transform: translateY(0);
-}
-.reference-mobile-handle {
-  display: flex; align-items: center; justify-content: center;
-  padding: 8px; cursor: pointer; font-size: 13px; font-weight: 600;
-  color: var(--primary-light); background: var(--bg-card);
-  border-bottom: 1px solid var(--border);
-  height: 36px;
-}
-.reference-mobile-strip.expanded .reference-mobile-handle span::before {
-  content: "▼ ";
-}
-.reference-mobile-strip.expanded .reference-mobile-handle span {
-  font-size: 0;
-}
-.reference-mobile-strip.expanded .reference-mobile-handle span::before {
-  font-size: 13px;
-}
-.reference-mobile-strip.expanded .reference-mobile-handle span::after {
-  content: "收起参考图";
-  font-size: 13px;
-}
-.reference-mobile-content {
-  height: 140px; display: flex; align-items: center; justify-content: center;
-  padding: 8px; background: #0d1220;
-}
-.reference-mobile-content img {
-  max-width: 100%; max-height: 100%; object-fit: contain;
-  border-radius: 4px;
+.reference-float-thumb.visible { display: block; }
+.reference-float-thumb img {
+  width: 100%; display: block; object-fit: contain;
+  background: #0d1220;
 }
 
 /* PLACEHOLDER: game-tools, piece-tray, drag, effects, completion, leaderboard, share, shop, responsive */
@@ -659,9 +637,8 @@ html, body {
 }
 
 /* === Responsive: Mobile (default) === */
-/* On mobile: hide PC side panel, show mobile strip */
+/* On mobile: hide PC side panel; floating thumbnail used instead */
 .reference-panel { display: none !important; }
-.reference-mobile-strip { display: flex; }
 
 /* === Responsive: Tablet+ === */
 @media (min-width: 768px) {
@@ -670,10 +647,10 @@ html, body {
   .difficulty-cards { max-width: 480px; margin: 0 auto; }
   .piece-tray-wrapper { height: 130px; }
 
-  /* On tablet+: show PC panel, hide mobile strip */
+  /* On tablet+: show PC panel when toggled */
   .reference-panel { display: none !important; }
   .reference-panel.visible { display: flex !important; }
-  .reference-mobile-strip { display: none !important; }
+  .reference-float-thumb { display: none !important; }
 
   .game-area-wrapper { padding: 12px; }
 }
@@ -685,7 +662,7 @@ html, body {
 
   .reference-panel { display: none !important; }
   .reference-panel.visible { display: flex !important; width: 220px; }
-  .reference-mobile-strip { display: none !important; }
+  .reference-float-thumb { display: none !important; }
 
   .game-area-wrapper {
     padding: 16px;
@@ -693,17 +670,7 @@ html, body {
 }
 
 @media (max-width: 767px) {
-  /* Mobile: game-area needs room for mobile strip */
-  #screen-game .game-area-wrapper {
-    padding-bottom: 40px; /* space for collapsed mobile strip handle */
-  }
-  .reference-mobile-strip {
-    display: flex;
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    z-index: 100;
-  }
-  .reference-mobile-strip.hidden { display: none; }
+  /* Mobile: floating thumbnail is used, no extra padding needed */
 }
 
 @media (max-width: 375px) {
@@ -712,5 +679,5 @@ html, body {
   .piece-tray-wrapper { height: 100px; }
   .tool-btn { padding: 4px 10px; min-width: 60px; }
   .game-tools { gap: 6px; padding: 4px 8px; }
-  .reference-mobile-content { height: 110px; }
+  .reference-float-thumb { width: 90px; }
 }

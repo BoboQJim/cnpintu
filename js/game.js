@@ -185,17 +185,16 @@ function startPuzzle(prov, spotIdx, diffKey) {
   document.getElementById('total-count').textContent = cfg.total;
   document.getElementById('placed-count').textContent = '0';
 
-  // Reference image - set both PC and mobile
+  // Reference image - set PC panel and floating thumbnail
   const refImg = document.getElementById('reference-img');
   refImg.src = imgPath;
-  const refImgMobile = document.getElementById('reference-img-mobile');
-  refImgMobile.src = imgPath;
 
   // Reset reference panel state
   const refPanel = document.getElementById('reference-panel');
   refPanel.classList.remove('visible');
-  const refMobileStrip = document.getElementById('reference-mobile-strip');
-  refMobileStrip.classList.remove('expanded', 'hidden');
+  // Reset floating thumbnail
+  const floatThumb = document.getElementById('reference-float-thumb');
+  if (floatThumb) floatThumb.classList.remove('visible');
   // Reset toggle button
   const toggleBtn = document.getElementById('btn-ref-toggle');
   toggleBtn.classList.remove('active');
@@ -894,23 +893,22 @@ document.querySelectorAll('.leaderboard-tab').forEach(tab => {
   });
 });
 
-// === Reference Image Toggle (new: side panel on PC, bottom strip on mobile) ===
+// === Reference Image Toggle ===
 document.getElementById('btn-ref-toggle').addEventListener('click', () => {
   const isMobile = window.innerWidth < 768;
   const toggleBtn = document.getElementById('btn-ref-toggle');
 
   if (isMobile) {
-    // Toggle mobile strip
-    const strip = document.getElementById('reference-mobile-strip');
-    if (strip.classList.contains('hidden')) {
-      strip.classList.remove('hidden');
-      strip.classList.add('expanded');
-      toggleBtn.classList.add('active');
-    } else if (strip.classList.contains('expanded')) {
-      strip.classList.remove('expanded');
+    // Toggle floating thumbnail
+    const floatThumb = document.getElementById('reference-float-thumb');
+    if (floatThumb.classList.contains('visible')) {
+      floatThumb.classList.remove('visible');
       toggleBtn.classList.remove('active');
     } else {
-      strip.classList.add('expanded');
+      // Set image src from the main reference img
+      const thumbImg = floatThumb.querySelector('img');
+      thumbImg.src = document.getElementById('reference-img').src;
+      floatThumb.classList.add('visible');
       toggleBtn.classList.add('active');
     }
   } else {
@@ -944,17 +942,10 @@ document.getElementById('btn-ref-toggle').addEventListener('click', () => {
   }
 });
 
-// Mobile strip toggle
-document.getElementById('ref-mobile-toggle').addEventListener('click', () => {
-  const strip = document.getElementById('reference-mobile-strip');
-  const toggleBtn = document.getElementById('btn-ref-toggle');
-  if (strip.classList.contains('expanded')) {
-    strip.classList.remove('expanded');
-    toggleBtn.classList.remove('active');
-  } else {
-    strip.classList.add('expanded');
-    toggleBtn.classList.add('active');
-  }
+// Clicking the floating thumbnail also dismisses it
+document.getElementById('reference-float-thumb').addEventListener('click', () => {
+  document.getElementById('reference-float-thumb').classList.remove('visible');
+  document.getElementById('btn-ref-toggle').classList.remove('active');
 });
 
 // PC panel close button
